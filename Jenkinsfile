@@ -1,48 +1,32 @@
-//pipeline {
- //   agent any
- //   tools {
- //      maven 'M2_HOME'
- //      jdk 'JAVA_HOME'
- //   }
- //   stages {
- //       stage ('Initialize') {
- //           steps {
- //               sh '''
- //                   echo "PATH = ${PATH}"
- //                   echo "M2_HOME = ${M2_HOME}"
- //                   echo "PATH = ${PATH}"
- //                   echo "JAVA_HOME = ${JAVA_HOME}"
- //               '''
- //           }
- //       }
- //
- //       stage ('Build') {
- //           steps {
- //               sh 'mvn -Dmaven.test.failure.ignore=true install' 
- //           }
- //           post {
- //               success {
- //                   junit 'target/surefire-reports/**/*.xml' 
- //               }
- //           }
- //       }
- //   }
-//}
-
 pipeline {
-    agent any
+    agent {
+       node {
+         label "linux"
+      }
+    }
     stages {
-        stage ('Build') {
+        stage('Build') {
             steps {
-                sh 'mvn -Dmaven.test.failure.ignore=true install' 
+                echo '<--------------- Building started --------------->'
+                sh 'printenv'
+                sh 'mvn clean install'
+                echo '<------------- Build completed --------------->'
             }
-            post {
-                success {
-                    junit 'target/surefire-reports/**/*.xml' 
-        
-		        }
-		  }
-	}
+        }
+
+  stage ("Sonar Analysis") {
+            environment {
+               scannerHome = tool 'sonar'  //scanner name configured for slave 
+            }
+            steps {
+                echo '<--------------- Sonar Analysis started  --------------->'
+                withSonarQubeEnv('Sonar') {    
+                    //sonarqube server name in master
+                    sh "${scannerHome}/bin/sonar-scanner"
+                }    
+                echo '<--------------- Sonar Analysis stopped  --------------->'
+            }   
+        }
     }
 }
 
